@@ -10,7 +10,7 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Minus, Loader2 } from 'lucide-react';
+import { Plus, Minus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CARD_TYPE } from '@/constants/card-type';
 import { CardToolBar, FilterType, SortOption, SortDirection } from '@/components/ui/CardToolBar';
 import { Domain } from '@/constants/domains';
@@ -108,6 +108,9 @@ export default function BuilderCardGrid({ initialCards = [] }: BuilderCardGridPr
 
   const [cards, setCards] = useState<Card[]>(initialCards);
   const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const gridTopRef = useState<HTMLDivElement | null>(null);
 
   const debouncedSearch = useDebounce(searchText, 300);
 
@@ -128,6 +131,8 @@ export default function BuilderCardGrid({ initialCards = [] }: BuilderCardGridPr
           factions: factionFilter,
           rarity: rarityFilter || undefined,
           type: (cardTypeFilter && activeFilter === 'MainDeck') ? cardTypeFilter : undefined,
+          page,
+          limit: 40
         };
 
         const queryString = toURLSearchParams(filters).toString();
@@ -136,7 +141,14 @@ export default function BuilderCardGrid({ initialCards = [] }: BuilderCardGridPr
         if (!res.ok) throw new Error('Failed to fetch cards');
 
         const data = await res.json();
-        setCards(data);
+        if (data.data) {
+          setCards(data.data);
+          setTotalPages(data.totalPages || 1);
+        } else if (Array.isArray(data)) {
+          // Fallback if API changes back or behaves simpler
+          setCards(data);
+          setTotalPages(1);
+        }
       } catch (error) {
         console.error("Error fetching filtered cards:", error);
       } finally {
@@ -152,8 +164,14 @@ export default function BuilderCardGrid({ initialCards = [] }: BuilderCardGridPr
     sortDirection,
     factionFilter,
     rarityFilter,
-    cardTypeFilter
+    cardTypeFilter,
+    page
   ]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, activeFilter, factionFilter, rarityFilter, cardTypeFilter]);
 
   const { setNodeRef } = useDroppable({ id: 'card-grid' });
 
@@ -180,7 +198,7 @@ export default function BuilderCardGrid({ initialCards = [] }: BuilderCardGridPr
         onCardTypeChange={setCardTypeFilter}
       />
 
-      <div ref={setNodeRef} className="relative min-h-[500px]">
+      <div id="builder-grid-top" ref={setNodeRef} className="relative min-h-[500px]">
 
         {isLoading && (
           <div className="absolute inset-0 z-20 bg-background/60 backdrop-blur-[2px] flex items-center justify-center rounded-lg">
@@ -214,6 +232,39 @@ export default function BuilderCardGrid({ initialCards = [] }: BuilderCardGridPr
           )}
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4 py-4 border-t border-border">
+          <Button
+            variant="outline"
+            disabled={page <= 1 || isLoading}
+            onClick={() => {
+              setPage(p => Math.max(1, p - 1));
+              document.getElementById('builder-grid-top')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="flex items-center gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" /> Previous
+          </Button>
+
+          <span className="text-sm font-medium text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+
+          <Button
+            variant="outline"
+            disabled={page >= totalPages || isLoading}
+            onClick={() => {
+              setPage(p => Math.min(totalPages, p + 1));
+              document.getElementById('builder-grid-top')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="flex items-center gap-2"
+          >
+            Next <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

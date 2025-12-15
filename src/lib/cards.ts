@@ -1,12 +1,15 @@
 import { db } from '@/db';
 import { cards } from '@/db/schema';
-import { eq, and, ilike, or, SQL, sql, Column, asc, desc } from 'drizzle-orm';
+import { eq, and, ilike, or, SQL, sql, Column, asc, desc, inArray } from 'drizzle-orm';
 import type { Card } from '@/types/card';
 import { CARD_TYPE } from '@/constants/card-type';
-import { CardFilters } from '@/lib/filter-utils';
+import { CardFilters, PaginatedResult } from '@/lib/filter-utils';
 
-export async function getAllCards(filters: CardFilters = {}): Promise<Card[]> {
+export async function getAllCards(filters: CardFilters = {}): Promise<PaginatedResult> {
     const conditions: SQL[] = [];
+    const page = filters.page || 1;
+    const limit = filters.limit || 40;
+    const offset = (page - 1) * limit;
 
     // 1. Text Search (Case insensitive)
     if (filters.name) {
@@ -42,12 +45,7 @@ export async function getAllCards(filters: CardFilters = {}): Promise<Card[]> {
                 conditions.push(ilike(cards.type, `%${CARD_TYPE.Rune}%`));
                 break;
             case 'MainDeck':
-                // Main Deck = NOT Legend AND NOT Battlefield AND NOT Rune
-                conditions.push(and(
-                    sql`${cards.type} NOT ILIKE ${`%${CARD_TYPE.Legend}%`}`,
-                    sql`${cards.type} NOT ILIKE ${`%${CARD_TYPE.Battlefield}%`}`,
-                    sql`${cards.type} NOT ILIKE ${`%${CARD_TYPE.Rune}%`}`
-                )!);
+                conditions.push(inArray(cards.type, [CARD_TYPE.Unit, CARD_TYPE.Spell, CARD_TYPE.Gear]));
                 break;
         }
     }
@@ -57,7 +55,16 @@ export async function getAllCards(filters: CardFilters = {}): Promise<Card[]> {
         conditions.push(sql`${cards.data}->'tags' @> ${JSON.stringify(filters.tags)}`);
     }
 
-    // 6. Sorting
+    // --- Query 1: Get Total Count ---
+    // We run a separate query just to count matching rows efficiently
+    const totalResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(cards)
+        .where(and(...conditions));
+
+    const total = Number(totalResult[0].count);
+
+    // --- Query 2: Get Data ---
     let orderByClause: SQL | Column = cards.name; // Default
     if (filters.sort === 'cost') orderByClause = cards.cost;
     if (filters.sort === 'might') orderByClause = cards.might;
@@ -66,6 +73,8 @@ export async function getAllCards(filters: CardFilters = {}): Promise<Card[]> {
         .select()
         .from(cards)
         .where(and(...conditions))
+        .limit(limit)
+        .offset(offset)
         .$dynamic();
 
     // Apply Sort Direction
@@ -76,8 +85,15 @@ export async function getAllCards(filters: CardFilters = {}): Promise<Card[]> {
     }
 
     const result = await query;
-    return result.map((row) => row.data as unknown as Card);
+    const data = result.map((row) => row.data as unknown as Card);
+
+    return {
+        data,
+        total,
+        totalPages: Math.ceil(total / limit)
+    };
 }
+
 
 export async function getCardById(cardId: string): Promise<Card | null> {
     const result = await db

@@ -1,3 +1,5 @@
+import { Card } from "@/types/card";
+
 export interface CardFilters {
   name?: string;
   tags?: string[];
@@ -11,6 +13,14 @@ export interface CardFilters {
   maxMight?: number;
   sort?: 'name' | 'cost' | 'might';
   order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedResult {
+  data: Card[];
+  total: number;
+  totalPages: number;
 }
 
 export function parseSearchQuery(input: string): { name: string; tags: string[] } {
@@ -48,6 +58,9 @@ export function parseCardFilters(searchParams: URLSearchParams): CardFilters {
 
     sort: (searchParams.get('sort') as CardFilters['sort']) || undefined,
     order: (searchParams.get('order') as CardFilters['order']) || undefined,
+
+    page: parseNumber(searchParams.get('page')) || 1,
+    limit: parseNumber(searchParams.get('limit')) || 40,
   };
 }
 
@@ -81,6 +94,10 @@ export function toURLSearchParams(filters: CardFilters): URLSearchParams {
   if (filters.tags) {
     filters.tags.forEach(t => params.append('tags', t));
   }
+
+  // Pagination
+  if (filters.page) params.set('page', String(filters.page));
+  if (filters.limit) params.set('limit', String(filters.limit));
 
   return params;
 }

@@ -21,6 +21,8 @@ export default async function CardsPage(props: PageProps) {
     return Array.isArray(param) ? param : [param];
   };
 
+  const page = Number(searchParams.page) || 1;
+
   const filters: CardFilters = {
     name: name,
     tags: tags,
@@ -30,15 +32,20 @@ export default async function CardsPage(props: PageProps) {
     type: searchParams.type as string,
     sort: searchParams.sort as CardFilters['sort'],
     order: searchParams.order as CardFilters['order'],
+    page: page,
+    limit: Number(searchParams.limit) || 40,
   };
 
-  const allCards = await getAllCards(filters);
+  const { data, total, totalPages } = await getAllCards(filters);
 
   return (
     <main className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Card Gallery</h1>
       <CardGrid
-        initialCards={allCards}
+        initialCards={data}
+        totalCards={total}
+        totalPages={totalPages}
+        currentPage={page}
       />
     </main>
   );
