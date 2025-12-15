@@ -69,7 +69,7 @@ export default function DeckList() {
   });
 
   const championCardEntry = mainDeck.find(entry =>
-    entry.card.type.includes('Champion Unit') &&
+    entry.card.type.includes('Unit') &&
     championLegend &&
     entry.card.tags.some(tag => championLegend.tags.includes(tag))
   );
