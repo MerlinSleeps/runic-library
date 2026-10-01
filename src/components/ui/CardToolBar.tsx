@@ -9,9 +9,10 @@ import { CARD_TYPE } from '@/constants/card-type';
 import type { Card } from '@/types/card';
 import { useDebounce } from '@/hooks/useDebounce';
 
-export type FilterType = 'All' | 'Legend' | 'Battlefield' | 'MainDeck' | 'Rune';
-export type SortOption = 'cost' | 'might' | 'name';
-export type SortDirection = 'asc' | 'desc';
+import type { CardCategory, SortOption, SortDirection } from '@/lib/filter-utils';
+
+export type FilterType = CardCategory;
+export type { SortOption, SortDirection };
 
 interface CardToolBarProps {
     // Search
@@ -38,7 +39,7 @@ interface CardToolBarProps {
     onCardTypeChange: (type: string | null) => void;
 }
 
-const RARITIES = ['Common', 'Rare', 'Epic', 'Showcase'];
+const RARITIES = ['Common', 'Uncommon', 'Rare', 'Epic', 'Showcase'];
 const MAIN_DECK_TYPES = [CARD_TYPE.Unit, CARD_TYPE.Spell, CARD_TYPE.Gear];
 
 export function CardToolBar({
@@ -59,7 +60,7 @@ export function CardToolBar({
 }: CardToolBarProps) {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
-    // 1. Local state for immediate typing feedback
+    // Local state gives immediate typing feedback; the parent is only updated on Enter/blur.
     const [localSearch, setLocalSearch] = useState(searchValue);
 
     const debouncedSearch = useDebounce(localSearch, 300);
@@ -89,12 +90,11 @@ export function CardToolBar({
         return () => clearTimeout(timeoutId)
     }, [debouncedSearch])
 
-    // 2. Sync local state if the Parent/URL changes (e.g. Browser Back Button)
+    // Keep local state in sync when the parent value changes (e.g. browser back button).
     useEffect(() => {
         setLocalSearch(searchValue);
     }, [searchValue]);
 
-    // 3. Handle the Enter Key
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             onSearchChange(debouncedSearch);
@@ -123,14 +123,12 @@ export function CardToolBar({
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Search card name... (Press Enter)"
-                        // Use local state here
                         value={localSearch}
                         onChange={(e) => {
                             setLocalSearch(e.target.value)
                             setShowSuggestions(true)
                         }}
                         onKeyDown={handleKeyDown}
-                        // Optional: Trigger search on blur (clicking away) as well
                         onBlur={() => {
                             onSearchChange(localSearch)
                             setTimeout(() => setShowSuggestions(false), 200)

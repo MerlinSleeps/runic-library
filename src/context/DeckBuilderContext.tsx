@@ -1,72 +1,13 @@
 "use client";
 
-import type { Card, Domain } from '@/types/card';
-import type { DeckEntry } from '@/types/card';
+import type { Card, DeckEntry } from '@/types/card';
 import { CARD_TYPE } from '@/constants/card-type';
 import React, { createContext, useContext, useState, useMemo } from 'react';
+import { getCardTypes, RULES, validateDeck, type ValidationState } from '@/lib/deck-validation';
 
-// --- DECK BUILDING RULES (from our conversation) ---
-const RULES = {
-  MAIN_DECK_MIN_SIZE: 40,
-  MAIN_DECK_MAX_SIZE: 40, // Exactly 40 cards
-  RUNE_DECK_SIZE: 12,
-  BATTLEFIELD_DECK_SIZE: 3,
-  MAIN_DECK_COPY_LIMIT: 3,
-  SIGNATURE_CARD_LIMIT: 3,
-};
-
-
-// --- HELPER FUNCTIONS FOR DATA NORMALIZATION ---
-
-function getCardTypes(card: Card): string[] {
-  return card.type ? card.type.split(' ') : [];
-}
-
-function getDomains(card: Card): Domain[] {
-  return card.faction ? card.faction.split(' ') : [];
-}
-
-function getChampionTag(card: Card): string | null {
-  const ignore = ['Signature', 'Elite', 'Bird', 'Pirate', 'Ionia', 'Demacia', 'Noxus', 'Freljord', 'Piltover', 'Zaun', 'Bilgewater', 'Targon', 'Shurima', 'Shadow Isles', 'Bandle City', 'Runeterra'];
-  return card.tags.find(t => !ignore.includes(t)) || null;
-}
-
-function isSignature(card: Card): boolean {
-  return card.tags.includes('Signature');
-}
-
-// --- VALIDATION LOGIC ---
-
-function isCardInDomain(card: Card, identity: Domain[]): boolean {
-  if (identity.length === 0) return false;
-  const cardDomains = getDomains(card);
-  return cardDomains.every((domain) => identity.includes(domain));
-}
+export { RULES, type ValidationState } from '@/lib/deck-validation';
 
 // --- CONTEXT DEFINITION ---
-
-export interface ValidationState {
-  domainIdentity: Domain[];
-  championTag: string | null;
-
-  totalMainDeckCards: number;
-  isMainDeckSizeValid: boolean;
-  mainDeckErrors: string[];
-
-  totalSignatureCards: number;
-  isSignatureCardCountValid: boolean;
-
-  totalRuneCards: number;
-  isRuneDeckSizeValid: boolean;
-  runeDeckErrors: string[];
-
-  totalBattlefieldCards: number;
-  isBattlefieldDeckSizeValid: boolean;
-  isBattlefieldDeckUnique: boolean;
-  battlefieldDeckErrors: string[];
-
-  isDeckValid: boolean;
-}
 
 interface DeckBuilderContextType {
   championLegend: Card | null;
@@ -182,102 +123,10 @@ export const DeckBuilderProvider = ({
 
   // --- 2. REAL-TIME VALIDATION LOGIC ---
 
-  const validation = useMemo((): ValidationState => {
-    const state: ValidationState = {
-      domainIdentity: championLegend ? getDomains(championLegend) : [],
-      championTag: championLegend ? getChampionTag(championLegend) : null,
-
-      totalMainDeckCards: 0,
-      isMainDeckSizeValid: false,
-      mainDeckErrors: [],
-
-      totalSignatureCards: 0,
-      isSignatureCardCountValid: false,
-
-      totalRuneCards: 0,
-      isRuneDeckSizeValid: false,
-      runeDeckErrors: [],
-
-      totalBattlefieldCards: 0,
-      isBattlefieldDeckSizeValid: false,
-      isBattlefieldDeckUnique: true,
-      battlefieldDeckErrors: [],
-
-      isDeckValid: false,
-    };
-
-    if (!championLegend) {
-      state.isDeckValid = false;
-      return state; // No legend, nothing is valid
-    }
-
-    // --- Main Deck Validation ---
-    state.totalMainDeckCards = mainDeck.reduce((sum, e) => sum + e.count, 0);
-    state.isMainDeckSizeValid =
-      state.totalMainDeckCards >= RULES.MAIN_DECK_MIN_SIZE &&
-      state.totalMainDeckCards <= RULES.MAIN_DECK_MAX_SIZE;
-
-    mainDeck.forEach((entry) => {
-      if (entry.count > RULES.MAIN_DECK_COPY_LIMIT) {
-        state.mainDeckErrors.push(`${entry.card.name}: Max ${RULES.MAIN_DECK_COPY_LIMIT} copies allowed.`);
-      }
-      if (!isCardInDomain(entry.card, state.domainIdentity)) {
-        state.mainDeckErrors.push(`${entry.card.name}: Not in your Domain Identity.`);
-      }
-      if (isSignature(entry.card)) {
-        const tag = getChampionTag(entry.card);
-        if (tag !== state.championTag) {
-          state.mainDeckErrors.push(`${entry.card.name}: Signature card does not match Legend.`);
-        }
-      }
-    });
-
-    state.totalSignatureCards = mainDeck
-      .filter((e) => getCardTypes(e.card).includes(CARD_TYPE.Signature))
-      .reduce((sum, e) => sum + e.count, 0);
-    state.isSignatureCardCountValid = state.totalSignatureCards <= RULES.SIGNATURE_CARD_LIMIT;
-
-
-    // --- Rune Deck Validation ---
-    state.totalRuneCards = runeDeck.reduce((sum, e) => sum + e.count, 0);
-    state.isRuneDeckSizeValid = state.totalRuneCards === RULES.RUNE_DECK_SIZE;
-
-    runeDeck.forEach((entry) => {
-      if (!isCardInDomain(entry.card, state.domainIdentity)) {
-        state.runeDeckErrors.push(`${entry.card.name}: Not in your Domain Identity.`);
-      }
-    });
-
-    // --- Battlefield Deck Validation ---
-    state.totalBattlefieldCards = battlefieldDeck.length;
-    state.isBattlefieldDeckSizeValid = state.totalBattlefieldCards === RULES.BATTLEFIELD_DECK_SIZE;
-
-    const battlefieldNames = new Set(battlefieldDeck.map(e => e.card.name));
-    state.isBattlefieldDeckUnique = battlefieldNames.size === battlefieldDeck.length;
-    if (!state.isBattlefieldDeckUnique) {
-      state.battlefieldDeckErrors.push("Battlefield deck cannot have duplicate cards.");
-    }
-
-    battlefieldDeck.forEach((entry) => {
-      if (!isCardInDomain(entry.card, state.domainIdentity)) {
-        state.battlefieldDeckErrors.push(`${entry.card.name}: Not in your Domain Identity.`);
-      }
-    });
-
-    // --- Overall Validation ---
-    state.isDeckValid =
-      championLegend !== null &&
-      state.isMainDeckSizeValid &&
-      state.isSignatureCardCountValid &&
-      state.isRuneDeckSizeValid &&
-      state.isBattlefieldDeckSizeValid &&
-      state.isBattlefieldDeckUnique &&
-      state.mainDeckErrors.length === 0 &&
-      state.runeDeckErrors.length === 0 &&
-      state.battlefieldDeckErrors.length === 0;
-
-    return state;
-  }, [championLegend, mainDeck, runeDeck, battlefieldDeck]); // Re-run when any list changes
+  const validation = useMemo(
+    () => validateDeck({ championLegend, mainDeck, runeDeck, battlefieldDeck }),
+    [championLegend, mainDeck, runeDeck, battlefieldDeck]
+  );
 
 
   // --- 3. FINAL CONTEXT VALUE ---
@@ -293,7 +142,7 @@ export const DeckBuilderProvider = ({
     removeFromBattlefieldDeck,
     setLegend,
     removeLegend,
-    validation, // Provide the validation state to the app
+    validation,
   };
 
   return (
