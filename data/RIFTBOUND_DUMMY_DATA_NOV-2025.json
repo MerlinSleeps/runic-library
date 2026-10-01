@@ -415,7 +415,7 @@
           "description": "When you choose a friendly unit, you may exhaust me and pay  to ready it.When you conquer, you may pay  to ready me.",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Calm",
+          "faction": "Calm Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -441,7 +441,7 @@
           "description": "Your Sand Soldiers have [Weaponmaster]., : Play a 2  Sand Soldier unit token to your base. Use only if you've played an Equipment this turn.",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Calm",
+          "faction": "Calm Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -469,7 +469,7 @@
           "description": "When you or an ally hold, you may exhaust me to play a Gold gear token exhausted.While your score is within 3 points of the Victory Score, your Gold [ADD] an additional .",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Mind",
+          "faction": "Mind Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -497,7 +497,7 @@
           "description": "When you recycle a rune, you may exhaust me to play a Gold gear token exhausted.When one or more enemy units die, ready me.",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Body",
+          "faction": "Body Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -7947,7 +7947,7 @@
           "description": ": [Reaction] — [Add] . Use only to play spells. (Abilities that add resources can't be reacted to.)",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Fury",
+          "faction": "Fury Mind",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -8002,7 +8002,7 @@
           "description": "When you play a [Mighty] unit, you may exhaust me to channel 1 rune exhausted. (A unit is Mighty while it has 5+ .)",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Fury",
+          "faction": "Fury Body",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -8056,7 +8056,7 @@
           "description": "At start of your Beginning Phase, draw 1 if you have one or fewer cards in your hand.",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Fury",
+          "faction": "Fury Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -8108,7 +8108,7 @@
           "description": ": [Reaction], [Legion] — [Add] . (Abilities that add resources can't be reacted to. Get the effect if you've played a card this turn.)",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Fury",
+          "faction": "Fury Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -8167,7 +8167,7 @@
           "description": "When an enemy unit attacks a battlefield you control, give it -1  this turn, to a minimum of 1 .",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Calm",
+          "faction": "Mind Calm",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -8222,7 +8222,7 @@
           "description": ", : Buff a friendly unit. (If it doesn't have a buff, it gets a +1  buff.)",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Calm",
+          "faction": "Calm Body",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -8274,7 +8274,7 @@
           "description": ", : Move a friendly unit to or from its base.",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Calm",
+          "faction": "Calm Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -8328,7 +8328,7 @@
           "description": "When you stun one or more enemy units, buff a friendly unit. (If it doesn't have a buff, it gets a +1  buff.)",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Calm",
+          "faction": "Calm Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -8382,7 +8382,7 @@
           "description": "You may pay  to hide a card with [Hidden] instead of ., : Put a Teemo unit you own into your hand from your Champion Zone or the board.",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Mind",
+          "faction": "Mind Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -8438,7 +8438,7 @@
           "description": ", : Play a 1  Recruit unit token.",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Mind",
+          "faction": "Mind Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -8492,7 +8492,7 @@
           "description": ": Give a unit [Ganking] this turn. (It can move from battlefield to battlefield.)",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Body",
+          "faction": "Body Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -8548,7 +8548,7 @@
           "description": "When a buffed unit you control would die, you may pay  and exhaust me to spend its buff and recall it exhausted instead. (Send it to base. This isn't a move.)When you conquer, ready me.",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Body",
+          "faction": "Body Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9286,7 +9286,7 @@
           "description": ": [Reaction] — [Add] . Use only to play spells. (Abilities that add resources can't be reacted to.)",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Fury",
+          "faction": "Fury Mind",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9315,7 +9315,7 @@
           "description": ": [Reaction] — [Add] . Use only to play spells. (Abilities that add resources can't be reacted to.)",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Fury",
+          "faction": "Fury Mind",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9344,7 +9344,7 @@
           "description": "When you play a [Mighty] unit, you may exhaust me to channel 1 rune exhausted. (A unit is Mighty while it has 5+ .)",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Fury",
+          "faction": "Fury Body",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9372,7 +9372,7 @@
           "description": "When you play a [Mighty] unit, you may exhaust me to channel 1 rune exhausted. (A unit is Mighty while it has 5+ .)",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Fury",
+          "faction": "Fury Body",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9400,7 +9400,7 @@
           "description": "At start of your Beginning Phase, draw 1 if you have one or fewer cards in your hand.",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Fury",
+          "faction": "Fury Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9426,7 +9426,7 @@
           "description": "At start of your Beginning Phase, draw 1 if you have one or fewer cards in your hand.",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Fury",
+          "faction": "Fury Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9452,7 +9452,7 @@
           "description": ": [Reaction], [Legion] — [Add] . (Abilities that add resources can't be reacted to. Get the effect if you've played a card this turn.)",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Fury",
+          "faction": "Fury Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9482,7 +9482,7 @@
           "description": ": [Reaction], [Legion] — [Add] . (Abilities that add resources can't be reacted to. Get the effect if you've played a card this turn.)",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Fury",
+          "faction": "Fury Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9512,7 +9512,7 @@
           "description": "When an enemy unit attacks a battlefield you control, give it -1  this turn, to a minimum of 1 .",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Calm",
+          "faction": "Mind Calm",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9538,7 +9538,7 @@
           "description": "When an enemy unit attacks a battlefield you control, give it -1  this turn, to a minimum of 1 .",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Calm",
+          "faction": "Mind Calm",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9564,7 +9564,7 @@
           "description": ", : Buff a friendly unit. (If it doesn't have a buff, it gets a +1  buff.)",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Calm",
+          "faction": "Calm Body",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9590,7 +9590,7 @@
           "description": ", : Buff a friendly unit. (If it doesn't have a buff, it gets a +1  buff.)",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Calm",
+          "faction": "Calm Body",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9616,7 +9616,7 @@
           "description": ", : Move a friendly unit to or from its base.",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Calm",
+          "faction": "Calm Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9642,7 +9642,7 @@
           "description": ", : Move a friendly unit to or from its base.",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Calm",
+          "faction": "Calm Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9668,7 +9668,7 @@
           "description": "When you stun one or more enemy units, buff a friendly unit. (If it doesn't have a buff, it gets a +1  buff.)",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Calm",
+          "faction": "Calm Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9694,7 +9694,7 @@
           "description": "When you stun one or more enemy units, buff a friendly unit. (If it doesn't have a buff, it gets a +1  buff.)",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Calm",
+          "faction": "Calm Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9720,7 +9720,7 @@
           "description": "You may pay  to hide a card with [Hidden] instead of ., : Put a Teemo unit you own into your hand from your Champion Zone or the board.",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Mind",
+          "faction": "Mind Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9748,7 +9748,7 @@
           "description": "You may pay  to hide a card with [Hidden] instead of ., : Put a Teemo unit you own into your hand from your Champion Zone or the board.",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Mind",
+          "faction": "Mind Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9776,7 +9776,7 @@
           "description": ", : Play a 1  Recruit unit token.",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Mind",
+          "faction": "Mind Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9802,7 +9802,7 @@
           "description": ", : Play a 1  Recruit unit token.",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Mind",
+          "faction": "Mind Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9828,7 +9828,7 @@
           "description": ": Give a unit [Ganking] this turn. (It can move from battlefield to battlefield.)",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Body",
+          "faction": "Body Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9856,7 +9856,7 @@
           "description": ": Give a unit [Ganking] this turn. (It can move from battlefield to battlefield.)",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Body",
+          "faction": "Body Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9884,7 +9884,7 @@
           "description": "When a buffed unit you control would die, you may pay  and exhaust me to spend its buff and recall it exhausted instead. (Send it to base. This isn't a move.)When you conquer, ready me.",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Body",
+          "faction": "Body Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -9910,7 +9910,7 @@
           "description": "When a buffed unit you control would die, you may pay  and exhaust me to spend its buff and recall it exhausted instead. (Send it to base. This isn't a move.)When you conquer, ready me.",
           "type": "Legend",
           "rarity": "Showcase",
-          "faction": "Body",
+          "faction": "Body Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -10378,7 +10378,7 @@
           "description": "At the end of your turn, ready 2 runes.",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Fury",
+          "faction": "Fury Chaos",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -10430,7 +10430,7 @@
           "description": "While a friendly unit defends alone, it gets +2 .",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Calm",
+          "faction": "Calm Body",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -10484,7 +10484,7 @@
           "description": "When you play a spell that costs  or more, draw 1.",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Mind",
+          "faction": "Mind Order",
           "stats": {
             "energy": 0,
             "might": 0,
@@ -10538,7 +10538,7 @@
           "description": "When you conquer, if you have 4+ units at that battlefield, draw 2.",
           "type": "Legend",
           "rarity": "Rare",
-          "faction": "Body",
+          "faction": "Body Order",
           "stats": {
             "energy": 0,
             "might": 0,

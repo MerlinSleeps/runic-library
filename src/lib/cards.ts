@@ -1,107 +1,89 @@
 import { db } from '@/db';
 import { cards } from '@/db/schema';
-import { eq, and, ilike, or, SQL, sql, Column, asc, desc, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, ne, or, sql, type SQL } from 'drizzle-orm';
 import type { Card } from '@/types/card';
 import { CARD_TYPE } from '@/constants/card-type';
-import { CardFilters, PaginatedResult } from '@/lib/filter-utils';
+import type { CardCategory, CardFilters, PaginatedResult } from '@/lib/filter-utils';
 
-export async function getAllCards(filters: CardFilters = {}): Promise<PaginatedResult> {
-    const conditions: SQL[] = [];
-    const page = filters.page || 1;
-    const limit = filters.limit || 40;
-    const offset = (page - 1) * limit;
+const DEFAULT_PAGE_SIZE = 40;
 
-    // 1. Text Search (Case insensitive)
-    if (filters.name) {
-        conditions.push(ilike(cards.name, `%${filters.name}%`));
-    }
+const CATEGORY_CONDITIONS: Record<Exclude<CardCategory, 'All'>, SQL> = {
+  Legend: eq(cards.type, CARD_TYPE.Legend),
+  Battlefield: eq(cards.type, CARD_TYPE.Battlefield),
+  Rune: eq(cards.type, CARD_TYPE.Rune),
+  MainDeck: inArray(cards.type, [CARD_TYPE.Unit, CARD_TYPE.Spell, CARD_TYPE.Gear]),
+};
 
-    // 2. Factions (OR logic: Card matches ANY of the selected factions)
-    if (filters.factions && filters.factions.length > 0) {
-        const factionConditions = filters.factions.map(f =>
-            ilike(cards.faction, `%${f}%`)
-        );
-        conditions.push(or(...factionConditions)!);
-    }
+const SORT_COLUMNS = {
+  name: cards.name,
+  cost: cards.cost,
+  might: cards.might,
+} as const;
 
-    // 3. Rarity
-    if (filters.rarity) {
-        conditions.push(eq(cards.rarity, filters.rarity));
-    } else {
-        // By default, hide Showcase cards unless specifically asked for
-        conditions.push(sql`${cards.rarity} != 'Showcase'`);
-    }
+function buildConditions(filters: CardFilters): SQL[] {
+  const conditions: SQL[] = [];
 
-    // 4. Category Filter (The Main Toggles)
-    if (filters.category) {
-        switch (filters.category) {
-            case 'Legend':
-                conditions.push(ilike(cards.type, `%${CARD_TYPE.Legend}%`));
-                break;
-            case 'Battlefield':
-                conditions.push(ilike(cards.type, `%${CARD_TYPE.Battlefield}%`));
-                break;
-            case 'Rune':
-                conditions.push(ilike(cards.type, `%${CARD_TYPE.Rune}%`));
-                break;
-            case 'MainDeck':
-                conditions.push(inArray(cards.type, [CARD_TYPE.Unit, CARD_TYPE.Spell, CARD_TYPE.Gear]));
-                break;
-        }
-    }
+  if (filters.name) {
+    conditions.push(ilike(cards.name, `%${filters.name}%`));
+  }
 
-    // 5. Tags
-    if (filters.tags) {
-        conditions.push(sql`${cards.data}->'tags' @> ${JSON.stringify(filters.tags)}`);
-    }
+  if (filters.factions?.length) {
+    // A card matches if it belongs to ANY of the selected factions.
+    conditions.push(or(...filters.factions.map((f) => ilike(cards.faction, `%${f}%`)))!);
+  }
 
-    // --- Query 1: Get Total Count ---
-    // We run a separate query just to count matching rows efficiently
-    const totalResult = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(cards)
-        .where(and(...conditions));
+  // Showcase cards are alternate arts, so they are hidden unless explicitly requested.
+  conditions.push(filters.rarity ? eq(cards.rarity, filters.rarity) : ne(cards.rarity, 'Showcase'));
 
-    const total = Number(totalResult[0].count);
+  if (filters.category && filters.category !== 'All') {
+    conditions.push(CATEGORY_CONDITIONS[filters.category]);
+  }
 
-    // --- Query 2: Get Data ---
-    let orderByClause: SQL | Column = cards.name; // Default
-    if (filters.sort === 'cost') orderByClause = cards.cost;
-    if (filters.sort === 'might') orderByClause = cards.might;
+  if (filters.type) {
+    conditions.push(eq(cards.type, filters.type));
+  }
 
-    const query = db
-        .select()
-        .from(cards)
-        .where(and(...conditions))
-        .limit(limit)
-        .offset(offset)
-        .$dynamic();
+  if (filters.tags?.length) {
+    conditions.push(sql`${cards.data}->'tags' @> ${JSON.stringify(filters.tags)}::jsonb`);
+  }
 
-    // Apply Sort Direction
-    if (filters.order === 'desc') {
-        await query.orderBy(desc(orderByClause));
-    } else {
-        await query.orderBy(asc(orderByClause));
-    }
-
-    const result = await query;
-    const data = result.map((row) => row.data as unknown as Card);
-
-    return {
-        data,
-        total,
-        totalPages: Math.ceil(total / limit)
-    };
+  return conditions;
 }
 
+export async function getAllCards(filters: CardFilters = {}): Promise<PaginatedResult> {
+  const page = filters.page ?? 1;
+  const limit = filters.limit ?? DEFAULT_PAGE_SIZE;
+  const where = and(...buildConditions(filters));
+
+  const sortColumn = SORT_COLUMNS[filters.sort ?? 'name'];
+  const orderBy = filters.order === 'desc' ? desc(sortColumn) : asc(sortColumn);
+
+  const [[{ count }], rows] = await Promise.all([
+    db.select({ count: sql<number>`count(*)` }).from(cards).where(where),
+    db
+      .select({ data: cards.data })
+      .from(cards)
+      .where(where)
+      .orderBy(orderBy, asc(cards.id))
+      .limit(limit)
+      .offset((page - 1) * limit),
+  ]);
+
+  const total = Number(count);
+
+  return {
+    data: rows.map((row) => row.data as Card),
+    total,
+    totalPages: Math.ceil(total / limit),
+  };
+}
 
 export async function getCardById(cardId: string): Promise<Card | null> {
-    const result = await db
-        .select()
-        .from(cards)
-        .where(eq(cards.id, cardId))
-        .limit(1);
+  const [row] = await db
+    .select({ data: cards.data })
+    .from(cards)
+    .where(eq(cards.id, cardId))
+    .limit(1);
 
-    if (result.length === 0) return null;
-    return result[0].data as unknown as Card;
+  return row ? (row.data as Card) : null;
 }

@@ -19,8 +19,6 @@ export function Hero() {
     }
 
     return (
-        // Removed min-h calculation. It now flexes naturally within the page wrapper.
-        // Added pt-32 pb-12 to push content down into the "Hot Spot" of the art.
         <section className="flex flex-col items-center justify-center pt-32 pb-12 md:pt-48 md:pb-24 px-4 text-center">
 
             <div className="container max-w-5xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">

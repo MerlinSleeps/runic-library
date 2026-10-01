@@ -3,78 +3,66 @@
 import { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Card } from '@/types/card';
 import { CardImage } from '@/components/ui/CardImage';
-import { CARD_TYPE } from '@/constants/card-type';
 import { Card as ShadCard, CardContent } from '@/components/ui/card';
-import { CardToolBar, FilterType, SortOption, SortDirection } from '@/components/ui/CardToolBar';
-import { Domain } from '@/constants/domains';
-import { limit } from 'firebase/firestore';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CardToolBar } from '@/components/ui/CardToolBar';
+import { CARD_TYPE } from '@/constants/card-type';
+import type { Domain } from '@/constants/domains';
+import { toURLSearchParams, type CardCategory, type SortDirection, type SortOption } from '@/lib/filter-utils';
 
 interface CardGridProps {
-  initialCards: Card[];
-  totalCards: number;
+  cards: Card[];
   totalPages: number;
   currentPage: number;
+  initialCategory: CardCategory;
 }
 
-export default function CardGrid({ initialCards, totalCards, totalPages, currentPage }: CardGridProps) {
+export default function CardGrid({ cards, totalPages, currentPage, initialCategory }: CardGridProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  // Initialize state from URL params
-  const [searchText, setSearchText] = useState(searchParams.get('name') || '');
-  const [activeFilter, setActiveFilter] = useState<FilterType>((searchParams.get('category') as FilterType) || 'MainDeck');
+  // Filter state is initialised from the URL, so links and the back button keep working.
+  const [searchText, setSearchText] = useState(searchParams.get('name') ?? '');
+  const [activeFilter, setActiveFilter] = useState<CardCategory>(initialCategory);
   const [sortOption, setSortOption] = useState<SortOption>((searchParams.get('sort') as SortOption) || 'name');
   const [sortDirection, setSortDirection] = useState<SortDirection>((searchParams.get('order') as SortDirection) || 'asc');
-
-  const initialFactions = searchParams.getAll('factions') as Domain[];
-  const [factionFilter, setFactionFilter] = useState<Domain[]>(initialFactions);
-
+  const [factionFilter, setFactionFilter] = useState<Domain[]>(searchParams.getAll('factions') as Domain[]);
   const [rarityFilter, setRarityFilter] = useState<string | null>(searchParams.get('rarity'));
-  const [cardTypeFilter, setCardTypeFilter] = useState<string | null>(searchParams.getAll('types')[0] || null);
-
-
-  // Pagination State
+  const [cardTypeFilter, setCardTypeFilter] = useState<string | null>(searchParams.get('type'));
   const [page, setPage] = useState(currentPage);
 
-  // Effect: Sync State -> URL
+  // Sync filter state -> URL. The server component re-renders with the new results.
   useEffect(() => {
-    const params = new URLSearchParams();
+    const params = toURLSearchParams({
+      name: searchText || undefined,
+      category: activeFilter,
+      sort: sortOption,
+      order: sortDirection,
+      factions: factionFilter,
+      rarity: rarityFilter ?? undefined,
+      type: activeFilter === 'MainDeck' ? cardTypeFilter ?? undefined : undefined,
+      page,
+    }).toString();
 
-    if (searchText) {
-      params.set('name', searchText);
-      if (activeFilter === 'MainDeck' && !searchParams.get('category')) {
-        setActiveFilter('All');
-      }
-    }
-    if (activeFilter) params.set('category', activeFilter);
-    if (sortOption) params.set('sort', sortOption);
-    if (sortDirection) params.set('order', sortDirection);
+    if (params === searchParams.toString()) return;
 
-    factionFilter.forEach(f => params.append('factions', f));
-
-    if (rarityFilter) params.set('rarity', rarityFilter);
-    if (cardTypeFilter) params.append('types', cardTypeFilter);
-
-    if (page) params.set('page', page.toString());
-
-    // Push new URL. startTransition keeps the UI responsive while loading.
     startTransition(() => {
-      router.push(`?${params.toString()}`);
+      router.push(`?${params}`);
     });
-  }, [searchText, activeFilter, sortOption, sortDirection, factionFilter, rarityFilter, cardTypeFilter, page, router]);
+  }, [searchText, activeFilter, sortOption, sortDirection, factionFilter, rarityFilter, cardTypeFilter, page, router, searchParams]);
 
-  // RESET PAGE when filters change
-  const handleFilterReset = (setter: any, value: any) => {
-    setter(value);
-    setPage(1);
-  };
+  /** Wraps a setter so that changing a filter always jumps back to page 1. */
+  function resetPageOn<T>(setter: (value: T) => void) {
+    return (value: T) => {
+      setter(value);
+      setPage(1);
+    };
+  }
 
-  // Grid Layout
   const gridColsClass = activeFilter === 'Battlefield'
     ? 'grid-cols-1 md:grid-cols-3 lg:grid-cols-4'
     : 'grid-cols-1 md:grid-cols-3 lg:grid-cols-5';
@@ -83,25 +71,25 @@ export default function CardGrid({ initialCards, totalCards, totalPages, current
     <div>
       <CardToolBar
         searchValue={searchText}
-        onSearchChange={(val) => handleFilterReset(setSearchText, val)}
+        onSearchChange={resetPageOn(setSearchText)}
         activeFilter={activeFilter}
-        onFilterChange={(val) => handleFilterReset(setActiveFilter, val)}
+        onFilterChange={resetPageOn(setActiveFilter)}
         sortOption={sortOption}
-        onSortChange={(val) => handleFilterReset(setSortOption, val)}
+        onSortChange={resetPageOn(setSortOption)}
         sortDirection={sortDirection}
-        onSortDirectionChange={(val) => handleFilterReset(setSortDirection, val)}
+        onSortDirectionChange={resetPageOn(setSortDirection)}
         factionFilter={factionFilter}
-        onFactionChange={(val) => handleFilterReset(setFactionFilter, val)}
+        onFactionChange={resetPageOn(setFactionFilter)}
         rarityFilter={rarityFilter}
-        onRarityChange={(val) => handleFilterReset(setRarityFilter, val)}
+        onRarityChange={resetPageOn(setRarityFilter)}
         cardTypeFilter={cardTypeFilter}
-        onCardTypeChange={(val) => handleFilterReset(setCardTypeFilter, val)}
+        onCardTypeChange={resetPageOn(setCardTypeFilter)}
       />
 
       <div className="flex flex-col gap-6">
         <div className={`grid ${gridColsClass} gap-4 ${isPending ? 'opacity-50' : ''}`}>
-          {initialCards.map((card) => {
-            const isBattlefield = card.type.includes(CARD_TYPE.Battlefield);
+          {cards.map((card) => {
+            const isBattlefield = card.type === CARD_TYPE.Battlefield;
             const aspectRatioClass = isBattlefield ? 'aspect-[4/3]' : 'aspect-[3/4]';
 
             return (
@@ -109,10 +97,7 @@ export default function CardGrid({ initialCards, totalCards, totalPages, current
                 <ShadCard className="flex flex-col justify-between overflow-hidden h-full hover:shadow-lg hover:shadow-cyan-500/30 transition-shadow border-0 bg-transparent">
                   <CardContent className="p-0">
                     <div className={`${aspectRatioClass} w-full relative rounded-md overflow-hidden`}>
-                      <CardImage
-                        src={card.art?.thumbnailURL}
-                        alt={card.name}
-                      />
+                      <CardImage src={card.art?.thumbnailURL} alt={card.name} />
                     </div>
                   </CardContent>
                 </ShadCard>
@@ -120,20 +105,19 @@ export default function CardGrid({ initialCards, totalCards, totalPages, current
             );
           })}
 
-          {initialCards.length === 0 && (
+          {cards.length === 0 && (
             <div className="col-span-full text-center py-20 text-gray-500">
               No cards found matching your filters.
             </div>
           )}
         </div>
 
-        {/* --- PAGINATION CONTROLS --- */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-4 py-8 border-t border-gray-800">
+          <nav aria-label="Pagination" className="flex items-center justify-center gap-4 py-8 border-t border-gray-800">
             <Button
               variant="outline"
               disabled={page <= 1 || isPending}
-              onClick={() => setPage(p => Math.max(1, p - 1))}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               className="flex items-center gap-2"
             >
               <ChevronLeft className="h-4 w-4" /> Previous
@@ -146,12 +130,12 @@ export default function CardGrid({ initialCards, totalCards, totalPages, current
             <Button
               variant="outline"
               disabled={page >= totalPages || isPending}
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               className="flex items-center gap-2"
             >
               Next <ChevronRight className="h-4 w-4" />
             </Button>
-          </div>
+          </nav>
         )}
       </div>
     </div>

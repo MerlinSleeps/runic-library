@@ -1,4 +1,8 @@
-import { Card } from "@/types/card";
+import type { Card } from "@/types/card";
+
+export type CardCategory = 'All' | 'Legend' | 'Battlefield' | 'MainDeck' | 'Rune';
+export type SortOption = 'name' | 'cost' | 'might';
+export type SortDirection = 'asc' | 'desc';
 
 export interface CardFilters {
   name?: string;
@@ -6,13 +10,9 @@ export interface CardFilters {
   factions?: string[];
   rarity?: string;
   type?: string;
-  category?: 'Legend' | 'Battlefield' | 'MainDeck' | 'Rune' | 'All';
-  minCost?: number;
-  maxCost?: number;
-  minMight?: number;
-  maxMight?: number;
-  sort?: 'name' | 'cost' | 'might';
-  order?: 'asc' | 'desc';
+  category?: CardCategory;
+  sort?: SortOption;
+  order?: SortDirection;
   page?: number;
   limit?: number;
 }
@@ -23,52 +23,47 @@ export interface PaginatedResult {
   totalPages: number;
 }
 
+const QUOTED_TAG_PATTERN = /"([^"]+)"/g;
+
+/**
+ * Splits a search input into a name part and tags.
+ * Text in double quotes is treated as a tag: `Sett "Ionia"` -> name "Sett", tags ["Ionia"].
+ */
 export function parseSearchQuery(input: string): { name: string; tags: string[] } {
   if (!input) return { name: '', tags: [] };
 
-  // Extract text inside quotes as tags
-  const tagMatches = input.match(/"([^"]+)"/g);
-
-  const tags = tagMatches
-    ? tagMatches.map(t => t.replace(/"/g, '').trim())
-    : [];
-
-  // Remove tags from the name string and clean up whitespace
-  const name = input.replace(/"([^"]+)"/g, '').replace(/\s+/g, ' ').trim();
+  const tags = Array.from(input.matchAll(QUOTED_TAG_PATTERN), (match) => match[1].trim());
+  const name = input.replace(QUOTED_TAG_PATTERN, '').replace(/\s+/g, ' ').trim();
 
   return { name, tags };
 }
 
+/**
+ * Reads card filters from URL search params. The `name` param may contain quoted tags.
+ */
 export function parseCardFilters(searchParams: URLSearchParams): CardFilters {
+  const { name, tags: quotedTags } = parseSearchQuery(searchParams.get('name') ?? '');
+  const tags = [...quotedTags, ...searchParams.getAll('tags')];
+  const factions = searchParams.getAll('factions');
+
   return {
-    name: searchParams.get('name') || undefined,
-    tags: searchParams.getAll('tags').length > 0 ? searchParams.getAll('tags') : undefined,
-    factions: searchParams.getAll('factions').length > 0
-      ? searchParams.getAll('factions')
-      : undefined,
+    name: name || undefined,
+    tags: tags.length > 0 ? tags : undefined,
+    factions: factions.length > 0 ? factions : undefined,
     type: searchParams.get('type') || undefined,
     rarity: searchParams.get('rarity') || undefined,
-    category: (searchParams.get('category') as CardFilters['category']) || undefined,
-
-    // Safe Number Parsing (prevents NaN)
-    minCost: parseNumber(searchParams.get('minCost')),
-    maxCost: parseNumber(searchParams.get('maxCost')),
-    minMight: parseNumber(searchParams.get('minMight')),
-    maxMight: parseNumber(searchParams.get('maxMight')),
-
-    sort: (searchParams.get('sort') as CardFilters['sort']) || undefined,
-    order: (searchParams.get('order') as CardFilters['order']) || undefined,
-
-    page: parseNumber(searchParams.get('page')) || 1,
-    limit: parseNumber(searchParams.get('limit')) || 40,
+    category: (searchParams.get('category') as CardCategory) || undefined,
+    sort: (searchParams.get('sort') as SortOption) || undefined,
+    order: (searchParams.get('order') as SortDirection) || undefined,
+    page: parsePositiveInt(searchParams.get('page')) ?? 1,
+    limit: Math.min(parsePositiveInt(searchParams.get('limit')) ?? 40, 100),
   };
 }
 
-// Helper to avoid NaN
-function parseNumber(value: string | null): number | undefined {
+function parsePositiveInt(value: string | null): number | undefined {
   if (!value) return undefined;
   const num = Number(value);
-  return isNaN(num) ? undefined : num;
+  return Number.isInteger(num) && num > 0 ? num : undefined;
 }
 
 export function toURLSearchParams(filters: CardFilters): URLSearchParams {
@@ -80,22 +75,8 @@ export function toURLSearchParams(filters: CardFilters): URLSearchParams {
   if (filters.type) params.set('type', filters.type);
   if (filters.sort) params.set('sort', filters.sort);
   if (filters.order) params.set('order', filters.order);
-
-  // Numeric filters
-  if (filters.minCost !== undefined) params.set('minCost', String(filters.minCost));
-  if (filters.maxCost !== undefined) params.set('maxCost', String(filters.maxCost));
-  if (filters.minMight !== undefined) params.set('minMight', String(filters.minMight));
-  if (filters.maxMight !== undefined) params.set('maxMight', String(filters.maxMight));
-
-  // Arrays (Factions & Tags)
-  if (filters.factions) {
-    filters.factions.forEach(f => params.append('factions', f));
-  }
-  if (filters.tags) {
-    filters.tags.forEach(t => params.append('tags', t));
-  }
-
-  // Pagination
+  filters.factions?.forEach((f) => params.append('factions', f));
+  filters.tags?.forEach((t) => params.append('tags', t));
   if (filters.page) params.set('page', String(filters.page));
   if (filters.limit) params.set('limit', String(filters.limit));
 

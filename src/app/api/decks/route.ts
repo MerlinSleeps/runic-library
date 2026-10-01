@@ -1,80 +1,87 @@
-// src/app/api/decks/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from 'firebase-admin';
-import { createFirebaseAdminApp } from '@/lib/firebaseAdmin';
+import { getAuthenticatedUser } from '@/lib/firebaseAdmin';
 import { createDeck, ensureUserExists, getUserDecks } from '@/lib/decks';
+import type { Card, DeckEntry } from '@/types/card';
 
-// Initialize Admin SDK to verify tokens
-createFirebaseAdminApp({
-  projectId: process.env.FIREBASE_PROJECT_ID!,
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY!,
-});
+interface SaveDeckBody {
+  name?: unknown;
+  deck?: {
+    legend?: Card | null;
+    mainDeck?: DeckEntry[];
+    runeDeck?: DeckEntry[];
+    battlefieldDeck?: DeckEntry[];
+  };
+}
 
-// GET: Fetch the authenticated user's decks
+const MAX_DECK_NAME_LENGTH = 100;
+
+function isDeckEntryList(value: unknown): value is DeckEntry[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (entry) =>
+        typeof entry?.card?.id === 'string' &&
+        Number.isInteger(entry?.count) &&
+        entry.count > 0
+    )
+  );
+}
+
 export async function GET(request: NextRequest) {
+  const user = await getAuthenticatedUser(request);
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await auth().verifyIdToken(token);
-    const userId = decodedToken.uid;
-
-    const decks = await getUserDecks(userId);
-
+    const decks = await getUserDecks(user.uid);
     return NextResponse.json(decks);
   } catch (error) {
     console.error('Error fetching decks:', error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
-// POST: Save a new deck
 export async function POST(request: NextRequest) {
+  const user = await getAuthenticatedUser(request);
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  let body: SaveDeckBody;
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
 
-    const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await auth().verifyIdToken(token);
-    const userId = decodedToken.uid;
-    const email = decodedToken.email || 'no-email';
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  const { legend, mainDeck = [], runeDeck = [], battlefieldDeck = [] } = body.deck ?? {};
 
-    // 1. Ensure User exists in Neon (using Firebase UID as the primary key)
-    await ensureUserExists(userId, email);
+  if (!name || name.length > MAX_DECK_NAME_LENGTH) {
+    return NextResponse.json(
+      { error: `Deck name must be between 1 and ${MAX_DECK_NAME_LENGTH} characters.` },
+      { status: 400 }
+    );
+  }
+  if (!legend?.id || ![mainDeck, runeDeck, battlefieldDeck].every(isDeckEntryList)) {
+    return NextResponse.json({ error: 'Invalid deck data' }, { status: 400 });
+  }
 
-    // 2. Parse body
-    const body = await request.json();
-    const { name, deck } = body;
+  try {
+    await ensureUserExists(user.uid, user.email ?? 'no-email');
 
-    // Note: Your frontend sends `deck` as an object { legend, mainDeck, etc. }
-    // You need to flatten this into a single list of DeckEntry for the database function
-    // or update the createDeck function to handle the separated structure.
-    // For simplicity, let's assume we combine them here:
-    const allCards = [
-      ...(deck.legend ? [{ card: deck.legend, count: 1 }] : []),
-      ...deck.mainDeck,
-      ...deck.runeDeck,
-      ...deck.battlefieldDeck
+    const entries: DeckEntry[] = [
+      { card: legend, count: 1 },
+      ...mainDeck,
+      ...runeDeck,
+      ...battlefieldDeck,
     ];
+    const deckId = await createDeck(user.uid, name, entries);
 
-    // 3. Save to Neon
-    const deckId = await createDeck(userId, name, allCards);
-
-    return NextResponse.json({ success: true, deckId });
+    return NextResponse.json({ deckId }, { status: 201 });
   } catch (error) {
     console.error('Error saving deck:', error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

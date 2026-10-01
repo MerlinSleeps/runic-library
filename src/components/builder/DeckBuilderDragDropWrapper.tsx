@@ -86,7 +86,6 @@ export default function DeckBuilderDragDropWrapper({
                     // Check if it's a Champion Unit and matches Legend tag
                     const isChampionUnit = card.type.includes('Unit');
                     const matchesLegend = card.tags.some(tag => championLegend.tags.includes(tag));
-                    console.log(isChampionUnit, matchesLegend);
 
                     if (isChampionUnit && matchesLegend) {
                         addCard(card);

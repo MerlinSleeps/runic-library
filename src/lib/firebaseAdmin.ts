@@ -1,59 +1,46 @@
 import * as admin from 'firebase-admin';
 
-interface FirebaseAdminConfig {
-  projectId: string;
-  clientEmail: string;
-  privateKey: string;
-}
-
-function formatPrivateKey(key: string) {
-  return key.replace(/\\n/g, '\n');
-}
-
-export function createFirebaseAdminApp(config: FirebaseAdminConfig) {
+function getAdminApp(): admin.app.App {
   if (admin.apps.length > 0) {
     return admin.app();
   }
 
+  const { FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY } = process.env;
+  if (!FIREBASE_PROJECT_ID || !FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
+    throw new Error(
+      'Missing Firebase Admin credentials. Check .env.local (local) or the Vercel environment variables (production).'
+    );
+  }
+
   return admin.initializeApp({
     credential: admin.credential.cert({
-      projectId: config.projectId,
-      clientEmail: config.clientEmail,
-      privateKey: formatPrivateKey(config.privateKey),
+      projectId: FIREBASE_PROJECT_ID,
+      clientEmail: FIREBASE_CLIENT_EMAIL,
+      privateKey: FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
     }),
   });
 }
 
-export function getFirestore() {
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const projectId = process.env.FIREBASE_PROJECT_ID;
+export interface AuthenticatedUser {
+  uid: string;
+  email: string | null;
+}
 
-  if (!privateKey || !clientEmail || !projectId) {
-    if (!privateKey) {
-      throw new Error('Missing Firebase Admin private key. Check .env.local (local) or Vercel Env Vars (production).');
-    }
-    if (!clientEmail) {
-      throw new Error('Missing Firebase Admin client email. Check .env.local (local) or Vercel Env Vars (production).');
-    }
-    if (!projectId) {
-      throw new Error('Missing Firebase Admin project ID. Check .env.local (local) or Vercel Env Vars (production).');
-    }
-    throw new Error(
-      'Missing Firebase Admin keys. Check .env.local (local) or Vercel Env Vars (production).'
-    );
+/**
+ * Verifies the Firebase ID token from the `Authorization: Bearer <token>` header.
+ * Returns null if the header is missing or the token is invalid.
+ */
+export async function getAuthenticatedUser(request: Request): Promise<AuthenticatedUser | null> {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;
   }
 
-  if (!admin.apps.length) {
-
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId,
-        clientEmail,
-        privateKey: privateKey.replace(/\\n/g, '\n'),
-      }),
-    });
+  try {
+    const token = authHeader.slice('Bearer '.length);
+    const decoded = await getAdminApp().auth().verifyIdToken(token);
+    return { uid: decoded.uid, email: decoded.email ?? null };
+  } catch {
+    return null;
   }
-
-  return admin.firestore();
 }

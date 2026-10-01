@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useDeckBuilder } from '@/context/DeckBuilderContext';
+import { RULES, useDeckBuilder } from '@/context/DeckBuilderContext';
 import { useAuth } from '@/context/AuthContext';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import type { Card } from '@/types/card';
@@ -105,13 +105,16 @@ export default function DeckList() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: deckName, deck: fullDeck }),
+        body: JSON.stringify({ name: deckName.trim(), deck: fullDeck }),
       });
-      if (!response.ok) throw new Error('Failed to save deck');
+      if (!response.ok) {
+        const { error } = await response.json().catch(() => ({ error: response.statusText }));
+        throw new Error(`${response.status}: ${error}`);
+      }
       alert('Deck saved successfully!');
     } catch (error) {
-      console.error(error);
-      alert('Error saving deck.');
+      console.error('Error saving deck:', error);
+      alert(`Error saving deck (${(error as Error).message}).`);
     }
   };
 
@@ -165,8 +168,7 @@ export default function DeckList() {
                   onMouseEnter={() => setHoveredCard(championLegend)}
                   onMouseLeave={() => setHoveredCard(null)}
                 >
-                  {/*TODO: Create Gradient*/}
-                  {/*<Image src={championLegend.art.thumbnailURL} alt={championLegend.name} width={48} height={48} className="w-12 h-12 rounded object-cover" />*/}                  <div>
+                  <div>
                     <p className="font-bold text-purple-200">{championLegend.name}</p>
                     <p className="text-xs text-purple-300">{championLegend.faction}</p>
                   </div>
@@ -195,7 +197,6 @@ export default function DeckList() {
                   onMouseEnter={() => setHoveredCard(championCard)}
                   onMouseLeave={() => setHoveredCard(null)}
                 >
-                  {/*<Image src={championCard.art.thumbnailURL} alt={championCard.name} width={48} height={48} className="w-12 h-12 rounded object-cover" />*/}
                   <div>
                     <p className="font-bold text-yellow-200">{championCard.name}</p>
                     <p className="text-xs text-yellow-300">{championCard.type}</p>
@@ -214,7 +215,7 @@ export default function DeckList() {
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Main Deck</h3>
               <span className={`text-xs font-bold ${validation.isMainDeckSizeValid ? 'text-green-400' : 'text-red-400'}`}>
-                {validation.totalMainDeckCards} / 40
+                {validation.totalMainDeckCards} / {RULES.MAIN_DECK_SIZE}
               </span>
             </div>
 
@@ -260,7 +261,7 @@ export default function DeckList() {
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Rune Deck</h3>
               <span className={`text-xs font-bold ${validation.isRuneDeckSizeValid ? 'text-green-400' : 'text-red-400'}`}>
-                {validation.totalRuneCards} / 12
+                {validation.totalRuneCards} / {RULES.RUNE_DECK_SIZE}
               </span>
             </div>
 
@@ -303,7 +304,7 @@ export default function DeckList() {
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Battlefield</h3>
               <span className={`text-xs font-bold ${validation.isBattlefieldDeckSizeValid ? 'text-green-400' : 'text-red-400'}`}>
-                {validation.totalBattlefieldCards} / 3
+                {validation.totalBattlefieldCards} / {RULES.BATTLEFIELD_DECK_SIZE}
               </span>
             </div>
 
@@ -364,7 +365,7 @@ export default function DeckList() {
             />
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleSaveDeck}>
+              <AlertDialogAction onClick={handleSaveDeck} disabled={!deckName.trim()}>
                 Save
               </AlertDialogAction>
             </AlertDialogFooter>

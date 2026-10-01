@@ -110,7 +110,6 @@ export default function BuilderCardGrid({ initialCards = [] }: BuilderCardGridPr
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const gridTopRef = useState<HTMLDivElement | null>(null);
 
   const debouncedSearch = useDebounce(searchText, 300);
 

@@ -5,10 +5,9 @@ import type { DeckEntry } from '@/types/card';
 import { CARD_TYPE } from '@/constants/card-type';
 import React, { createContext, useContext, useState, useMemo } from 'react';
 
-// --- DECK BUILDING RULES (from our conversation) ---
-const RULES = {
-  MAIN_DECK_MIN_SIZE: 40,
-  MAIN_DECK_MAX_SIZE: 40, // Exactly 40 cards
+// --- DECK BUILDING RULES (Riftbound deck construction) ---
+export const RULES = {
+  MAIN_DECK_SIZE: 40,
   RUNE_DECK_SIZE: 12,
   BATTLEFIELD_DECK_SIZE: 3,
   MAIN_DECK_COPY_LIMIT: 3,
@@ -37,10 +36,14 @@ function isSignature(card: Card): boolean {
 
 // --- VALIDATION LOGIC ---
 
+const COLORLESS = 'Colorless';
+
+/** Colorless cards fit every deck; all other domains of a card must be part of the Legend's identity. */
 function isCardInDomain(card: Card, identity: Domain[]): boolean {
   if (identity.length === 0) return false;
-  const cardDomains = getDomains(card);
-  return cardDomains.every((domain) => identity.includes(domain));
+  return getDomains(card)
+    .filter((domain) => domain !== COLORLESS)
+    .every((domain) => identity.includes(domain));
 }
 
 // --- CONTEXT DEFINITION ---
@@ -213,9 +216,7 @@ export const DeckBuilderProvider = ({
 
     // --- Main Deck Validation ---
     state.totalMainDeckCards = mainDeck.reduce((sum, e) => sum + e.count, 0);
-    state.isMainDeckSizeValid =
-      state.totalMainDeckCards >= RULES.MAIN_DECK_MIN_SIZE &&
-      state.totalMainDeckCards <= RULES.MAIN_DECK_MAX_SIZE;
+    state.isMainDeckSizeValid = state.totalMainDeckCards === RULES.MAIN_DECK_SIZE;
 
     mainDeck.forEach((entry) => {
       if (entry.count > RULES.MAIN_DECK_COPY_LIMIT) {
@@ -258,12 +259,6 @@ export const DeckBuilderProvider = ({
       state.battlefieldDeckErrors.push("Battlefield deck cannot have duplicate cards.");
     }
 
-    battlefieldDeck.forEach((entry) => {
-      if (!isCardInDomain(entry.card, state.domainIdentity)) {
-        state.battlefieldDeckErrors.push(`${entry.card.name}: Not in your Domain Identity.`);
-      }
-    });
-
     // --- Overall Validation ---
     state.isDeckValid =
       championLegend !== null &&
@@ -277,7 +272,7 @@ export const DeckBuilderProvider = ({
       state.battlefieldDeckErrors.length === 0;
 
     return state;
-  }, [championLegend, mainDeck, runeDeck, battlefieldDeck]); // Re-run when any list changes
+  }, [championLegend, mainDeck, runeDeck, battlefieldDeck]);
 
 
   // --- 3. FINAL CONTEXT VALUE ---
@@ -293,7 +288,7 @@ export const DeckBuilderProvider = ({
     removeFromBattlefieldDeck,
     setLegend,
     removeLegend,
-    validation, // Provide the validation state to the app
+    validation,
   };
 
   return (
