@@ -1,13 +1,22 @@
 import { db } from '@/db';
 import { cards, decks, deckCards, users } from '@/db/schema';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { CARD_TYPE } from '@/constants/card-type';
 import type { Card, DeckEntry } from '@/types/card';
+
+export interface DeckLegendPreview {
+  id: string;
+  name: string;
+  faction: string;
+  imageUrl: string | null;
+}
 
 export interface DeckSummary {
   id: string;
   name: string;
   createdAt: Date;
   cardCount: number;
+  legend: DeckLegendPreview | null;
 }
 
 export interface DeckDetail {
@@ -67,7 +76,33 @@ export async function getUserDecks(userId: string): Promise<DeckSummary[]> {
     .groupBy(decks.id)
     .orderBy(desc(decks.createdAt));
 
-  return rows.map((row) => ({ ...row, cardCount: Number(row.cardCount) }));
+  const legends = await getLegendsForDecks(rows.map((row) => row.id));
+
+  return rows.map((row) => ({
+    ...row,
+    cardCount: Number(row.cardCount),
+    legend: legends.get(row.id) ?? null,
+  }));
+}
+
+async function getLegendsForDecks(deckIds: string[]): Promise<Map<string, DeckLegendPreview>> {
+  if (deckIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({ deckId: deckCards.deckId, data: cards.data })
+    .from(deckCards)
+    .innerJoin(cards, eq(cards.id, deckCards.cardId))
+    .where(and(inArray(deckCards.deckId, deckIds), eq(cards.type, CARD_TYPE.Legend)));
+
+  return new Map(
+    rows.map(({ deckId, data }) => {
+      const card = data as Card;
+      return [
+        deckId,
+        { id: card.id, name: card.name, faction: card.faction, imageUrl: card.art?.thumbnailURL ?? null },
+      ];
+    })
+  );
 }
 
 export async function getUserDeck(userId: string, deckId: string): Promise<DeckDetail | null> {
