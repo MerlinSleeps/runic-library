@@ -59,8 +59,9 @@ The builder enforces Riftbound's deck construction rules, all in one memoized va
 | Drag & drop | dnd-kit |
 | Database | Neon (serverless PostgreSQL) with Drizzle ORM |
 | Auth | Firebase Authentication. Server-side token verification with Firebase Admin SDK |
+| Testing | Vitest: unit tests for deck validation and filter parsing, route tests for the decks API |
 | Hosting | Vercel |
-| CI/CD | GitHub Actions: lint and build checks, plus an automatic Neon database branch for each pull request |
+| CI/CD | GitHub Actions: lint, test and build checks, plus an automatic Neon database branch for each pull request |
 
 ## Architecture & decisions
 
@@ -94,7 +95,7 @@ Color contrast was considered throughout the dark theme, and the UI is built on 
 - [ ] Accessibility pass: keyboard alternative to drag & drop, screen-reader announcements for validation changes, a full WCAG 2.2 AA audit
 - [ ] Sharing public decks (the data model already supports `public` / `private` visibility)
 - [ ] Deck import / export
-- [ ] Unit tests for the validation logic
+- [x] Unit tests for the validation logic
 
 ## Getting started
 
@@ -104,6 +105,7 @@ cd runic-library
 npm install
 npm run seed:sql   # seed the card table (requires .env.local, see below)
 npm run dev
+npm test           # run the unit tests
 ```
 
 Create a `.env.local` with your Neon and Firebase credentials:

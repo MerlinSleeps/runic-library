@@ -26,6 +26,9 @@ jobs:
       - name: Run Linter
         run: npm run lint
 
+      - name: Run Tests
+        run: npm test
+
       - name: Debug Secrets
         env:
           PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
